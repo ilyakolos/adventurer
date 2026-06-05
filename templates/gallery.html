@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>✦ WANDR — Галерея</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;700&family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
+<style>
+body { overflow: auto; background: var(--bg); }
+.gallery-page { min-height: 100vh; padding: 100px 40px 60px; position: relative; z-index: 2; }
+.gallery-header { text-align: center; margin-bottom: 48px; }
+.gallery-title { font-family: var(--font-head); font-size: clamp(48px,8vw,100px); letter-spacing: .06em; background: linear-gradient(135deg, var(--cyan), var(--pink)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.gallery-sub { font-family: var(--font-mono); font-size: 12px; color: var(--text2); letter-spacing: .2em; margin-top: 8px; }
+.back-btn { position: fixed; top: 24px; left: 28px; z-index: 10; display: flex; align-items: center; gap: 8px; padding: 10px 18px; background: var(--glass); backdrop-filter: var(--blur); border: 1px solid var(--glass-border); border-radius: 30px; color: var(--text2); font-family: var(--font-mono); font-size: 12px; text-decoration: none; transition: all .2s; }
+.back-btn:hover { color: var(--cyan); border-color: rgba(0,245,255,.3); }
+.masonry { columns: 4 280px; gap: 12px; }
+.masonry-item { break-inside: avoid; margin-bottom: 12px; position: relative; border-radius: 12px; overflow: hidden; cursor: pointer; border: 1px solid var(--glass-border); animation: photoIn .4s ease both; transition: transform .2s; }
+.masonry-item:hover { transform: scale(1.02); }
+.masonry-item img { width: 100%; display: block; }
+.masonry-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.8) 0%, transparent 50%); opacity: 0; transition: opacity .2s; display: flex; align-items: flex-end; padding: 14px; }
+.masonry-item:hover .masonry-overlay { opacity: 1; }
+.masonry-pin { font-family: var(--font-mono); font-size: 11px; }
+.empty-gallery { text-align: center; padding: 80px; color: var(--text2); font-family: var(--font-mono); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<a href="/" class="back-btn">← Карта</a>
+
+<div class="gallery-page">
+  <div class="gallery-header">
+    <div class="gallery-title">ГАЛЕРЕЯ</div>
+    <div class="gallery-sub" id="galleryCount">Завантаження...</div>
+  </div>
+  <div class="masonry" id="masonry"></div>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose">✕</button>
+  <img class="lightbox-img" id="lightboxImg" src="" alt="">
+  <div class="lightbox-caption" id="lightboxCaption"></div>
+</div>
+
+<script>
+async function loadGallery() {
+  const res = await fetch('/api/all-photos');
+  const photos = await res.json();
+  const masonry = document.getElementById('masonry');
+  document.getElementById('galleryCount').textContent = `${photos.length} фотографій з ваших подорожей`;
+  if (!photos.length) {
+    masonry.innerHTML = '<div class="empty-gallery">Ще немає фото.<br>Додайте їх до своїх точок на карті 📍</div>';
+    return;
+  }
+  masonry.innerHTML = photos.map((p, i) => `
+    <div class="masonry-item" style="animation-delay:${i*0.05}s" onclick="openLightbox('/uploads/${p.filename}','${p.pin_title}')">
+      <img src="/uploads/${p.filename}" loading="lazy" alt="${p.caption||''}">
+      <div class="masonry-overlay">
+        <div class="masonry-pin" style="color:${p.color}">📍 ${p.pin_title}</div>
+      </div>
+    </div>`).join('');
+}
+
+function openLightbox(src, cap) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightboxCaption').textContent = cap;
+  document.getElementById('lightbox').classList.add('open');
+}
+document.getElementById('lightboxClose').onclick = () => document.getElementById('lightbox').classList.remove('open');
+document.getElementById('lightbox').onclick = (e) => { if(e.target===e.currentTarget) document.getElementById('lightbox').classList.remove('open'); };
+document.addEventListener('keydown', e => { if(e.key==='Escape') document.getElementById('lightbox').classList.remove('open'); });
+
+loadGallery();
+</script>
+</body>
+</html>
